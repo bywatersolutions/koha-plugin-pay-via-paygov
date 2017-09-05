@@ -75,7 +75,7 @@
                         <input type="hidden" name="MerchantCode" value="[% FisMerchantCode %]" />
                         <input type="hidden" name="SettleCode" value="[% FisSettleCode %]" />
                         <input type="hidden" name="PaymentMethod" value="CreditOrDebit" />
-                        <input type="hidden" name="ReturnUrl" value="[% OPACBaseURL %]/cgi-bin/koha/opac-account-pay-fis-return.pl" />
+                        <input type="hidden" name="ReturnUrl" value="[% OPACBaseURL %]/cgi-bin/koha/opac-account-pay-return.pl?payment_method=Koha::Plugin::Com::ByWaterSolutions::PayViaFIS" />
                         <input type="hidden" name="CancelUrl" value="[% OPACBaseURL %]/cgi-bin/koha/opac-account.pl" />
 
                         <input type="hidden" name="UserPart1" value="[% borrower.firstname %]" />

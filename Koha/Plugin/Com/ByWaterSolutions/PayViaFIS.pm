@@ -92,7 +92,7 @@ sub opac_online_payment_end {
     my ( $template, $borrowernumber ) = get_template_and_user(
         {
             template_name => abs_path( $self->mbf_path('opac_online_payment_end.tt') ),
-            cgi           => $cgi,
+            query           => $cgi,
             type            => 'opac',
             authnotrequired => 0,
             is_plugin       => 1,
