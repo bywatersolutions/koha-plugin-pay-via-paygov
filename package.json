@@ -1,6 +1,7 @@
 {
   "name": "koha-plugin-pay-via-fis",
   "version": "1.0.1",
+  "previous_version": "1.0.1",
   "description": "Koha FIS OPAC Online Payment Plugin",
   "devDependencies": {
     "gulp": "^3.9.1",
@@ -23,6 +24,8 @@
   "homepage": "https://github.com/bywatersolutions/koha-plugin-pay-via-fis#readme",
   "dependencies": {
     "datetime": "0.0.3",
+    "gulp-replace": "^0.6.1",
+    "jsonfile": "^4.0.0",
     "node-datetime": "^2.0.0"
   }
 }
