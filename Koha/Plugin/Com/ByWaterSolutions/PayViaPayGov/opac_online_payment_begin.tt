@@ -25,7 +25,7 @@
             <div class="span10">
                 <div id="useraccount" class="maincontent">
                     <p>
-                        You are about to initiate a payment for the following fees to your library via FIS PayDirect.
+                        You are about to initiate a payment for the following fees to your library via PayGov.
                         Do you wish to begin?
                     </p>
 
@@ -71,11 +71,11 @@
                     </table>
 
 
-                    <form method="post" action="[% FisPostUrl %]">
-                        <input type="hidden" name="MerchantCode" value="[% FisMerchantCode %]" />
-                        <input type="hidden" name="SettleCode" value="[% FisSettleCode %]" />
+                    <form method="post" action="[% PayGovPostUrl %]">
+                        <input type="hidden" name="MerchantCode" value="[% PayGovMerchantCode %]" />
+                        <input type="hidden" name="SettleCode" value="[% PayGovSettleCode %]" />
                         <input type="hidden" name="PaymentMethod" value="CreditOrDebit" />
-                        <input type="hidden" name="ReturnUrl" value="[% OPACBaseURL %]/cgi-bin/koha/opac-account-pay-return.pl?payment_method=Koha::Plugin::Com::ByWaterSolutions::PayViaFIS" />
+                        <input type="hidden" name="ReturnUrl" value="[% OPACBaseURL %]/cgi-bin/koha/opac-account-pay-return.pl?payment_method=Koha::Plugin::Com::ByWaterSolutions::PayViaPayGov" />
                         <input type="hidden" name="CancelUrl" value="[% OPACBaseURL %]/cgi-bin/koha/opac-account.pl" />
 
                         <input type="hidden" name="UserPart1" value="[% borrower.firstname %]" />

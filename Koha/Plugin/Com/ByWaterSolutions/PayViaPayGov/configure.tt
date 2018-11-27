@@ -1,17 +1,17 @@
 [% INCLUDE 'doc-head-open.inc' %]
- <title>Koha: Plugin: Pay Via FIS: Configuration</title>
+ <title>Koha: Plugin: Pay Via PayGov: Configuration</title>
 [% INCLUDE 'doc-head-close.inc' %]
 </head>
 <body>
 [% INCLUDE 'header.inc' %]
 [% INCLUDE 'cat-search.inc' %]
 
-<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; Pay Via FIS &rsaquo; Configuration</div>
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; Pay Via PayGov &rsaquo; Configuration</div>
 
 <div id="doc3">
     <!-- We can access our own plugins resource files using the PLUGIN_PATH variable. -->
     <img src="[% PLUGIN_PATH %]/logo.png" />
-    <h3>Koha: Plugin: Pay Via FIS: Configuration</h3>
+    <h3>Koha: Plugin: Pay Via PayGov: Configuration</h3>
 
     <!-- Notice our form here has no 'action', this is good, it means that our forms will always get passed back to 'plugins/run.pl'. You could hard code it instead if you prefer -->
     <form method="get">
@@ -36,28 +36,28 @@
 
         <p>
 
-        <label for="FisPostUrl">FIS Post URL: </label>
-        <input type="text" name="FisPostUrl" value="[% FisPostUrl %]" />
+        <label for="PayGovPostUrl">PayGov Post URL: </label>
+        <input type="text" name="PayGovPostUrl" value="[% PayGovPostUrl %]" />
 
         <p>
 
-        <label for="FisMerchantCode">FIS Merchant Code: </label>
-        <input type="text" name="FisMerchantCode" value="[% FisMerchantCode %]" />
+        <label for="PayGovMerchantCode">PayGov Merchant Code: </label>
+        <input type="text" name="PayGovMerchantCode" value="[% PayGovMerchantCode %]" />
 
         <p>
 
-        <label for="FisSettleCode">FIS Settle Code: </label>
-        <input type="text" name="FisSettleCode" value="[% FisSettleCode %]" />
+        <label for="PayGovSettleCode">PayGov Settle Code: </label>
+        <input type="text" name="PayGovSettleCode" value="[% PayGovSettleCode %]" />
 
         <p>
 
-        <label for="FisApiUrl">FIS API URL: </label>
-        <input type="text" name="FisApiUrl" value="[% FisApiUrl %]" />
+        <label for="PayGovApiUrl">PayGov API URL: </label>
+        <input type="text" name="PayGovApiUrl" value="[% PayGovApiUrl %]" />
 
         <p>
 
-        <label for="FisApiPassword">FIS API Password: </label>
-        <input type="text" name="FisApiPassword" value="[% FisApiPassword %]" />
+        <label for="PayGovApiPassword">PayGov API Password: </label>
+        <input type="text" name="PayGovApiPassword" value="[% PayGovApiPassword %]" />
 
         <p>
 

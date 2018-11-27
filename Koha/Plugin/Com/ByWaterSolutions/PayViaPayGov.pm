@@ -1,4 +1,4 @@
-package Koha::Plugin::Com::ByWaterSolutions::PayViaFIS;
+package Koha::Plugin::Com::ByWaterSolutions::PayViaPayGov;
 
 use Modern::Perl;
 
@@ -18,12 +18,12 @@ our $VERSION = "{VERSION}";
 
 ## Here is our metadata, some keys are required, some are optional
 our $metadata = {
-    name   => 'Pay Via FIS PayDirect',
+    name   => 'Pay Via PayGov',
     author => 'Kyle M Hall',
-    description => 'This plugin enables online OPAC fee payments via FIS PayDirect',
-    date_authored   => '2017-08-24',
+    description => 'This plugin enables online OPAC fee payments via PayGov',
+    date_authored   => '2018-11-27',
     date_updated    => '1900-01-01',
-    minimum_version => '16.06.00.018',
+    minimum_version => '18.00.00.000',
     maximum_version => undef,
     version         => $VERSION,
 };
@@ -73,11 +73,11 @@ sub opac_online_payment_begin {
         borrower             => scalar Koha::Patrons->find($borrowernumber),
         payment_method       => scalar $cgi->param('payment_method'),
         enable_opac_payments => $self->retrieve_data('enable_opac_payments'),
-        FisPostUrl           => $self->retrieve_data('FisPostUrl'),
-        FisMerchantCode      => $self->retrieve_data('FisMerchantCode'),
-        FisSettleCode        => $self->retrieve_data('FisSettleCode'),
-        FisApiUrl            => $self->retrieve_data('FisApiUrl'),
-        FisApiPassword       => $self->retrieve_data('FisApiPassword'),
+        PayGovPostUrl           => $self->retrieve_data('PayGovPostUrl'),
+        PayGovMerchantCode      => $self->retrieve_data('PayGovMerchantCode'),
+        PayGovSettleCode        => $self->retrieve_data('PayGovSettleCode'),
+        PayGovApiUrl            => $self->retrieve_data('PayGovApiUrl'),
+        PayGovApiPassword       => $self->retrieve_data('PayGovApiPassword'),
         accountlines         => \@accountlines,
     );
 
@@ -99,18 +99,18 @@ sub opac_online_payment_end {
             is_plugin       => 1,
         }
     );
-    warn "FIS: BORROWERNUMBER - $borrowernumber" if $ENABLE_DEBUGGING;
+    warn "PayGov: BORROWERNUMBER - $borrowernumber" if $ENABLE_DEBUGGING;
 
     my $transaction_id = $cgi->param('TransactionId');
 
     my $merchant_code =
-      C4::Context->preference('FisMerchantCode');    #33WSH-LIBRA-PDWEB-W
+      C4::Context->preference('PayGovMerchantCode');    #33WSH-LIBRA-PDWEB-W
     my $settle_code =
-      C4::Context->preference('FisSettleCode');      #33WSH-LIBRA-PDWEB-00
-    my $password = C4::Context->preference('FisApiPassword');    #testpass;
+      C4::Context->preference('PayGovSettleCode');      #33WSH-LIBRA-PDWEB-00
+    my $password = C4::Context->preference('PayGovApiPassword');    #testpass;
 
     my $ua  = LWP::UserAgent->new;
-    my $url = C4::Context->preference('FisApiUrl')
+    my $url = C4::Context->preference('PayGovApiUrl')
       ;    #https://paydirectapi.ca.link2gov.com/ProcessTransactionStatus;
     my $response = $ua->post(
         $url,
@@ -125,35 +125,35 @@ sub opac_online_payment_end {
     my ( $m, $v );
 
     if ( $response->is_success ) {
-        warn "FIS: RESPONSE CONTENT - ***$response->decoded_content***" if $ENABLE_DEBUGGING;
+        warn "PayGov: RESPONSE CONTENT - ***$response->decoded_content***" if $ENABLE_DEBUGGING;
         my @params = split( '&', uri_unescape( $response->decoded_content ) );
         my $params;
         foreach my $p (@params) {
             my ( $key, $value ) = split( '=', $p );
             $params->{$key} = $value // q{};
         }
-        warn "FIS: INCOMING PARAMS - " . Data::Dumper::Dumper( $params ) if $ENABLE_DEBUGGING;
+        warn "PayGov: INCOMING PARAMS - " . Data::Dumper::Dumper( $params ) if $ENABLE_DEBUGGING;
 
         if ( $params->{TransactionID} eq $transaction_id ) {
 
-            my $note = "FIS ( $transaction_id  )";
+            my $note = "PayGov ( $transaction_id  )";
 
             unless ( Koha::Account::Lines->search( { note => $note } )->count() ) {
 
                 my @line_items = split( /,/, $cgi->param('LineItems') );
-                warn "FIS: LINE ITEMS - " . Data::Dumper::Dumper( \@line_items ) if $ENABLE_DEBUGGING;
+                warn "PayGov: LINE ITEMS - " . Data::Dumper::Dumper( \@line_items ) if $ENABLE_DEBUGGING;
 
                 my @paid;
                 my $account = Koha::Account->new( { patron_id => $borrowernumber } );
                 foreach my $l (@line_items) {
-                    warn "FIS: LINE ITEM - ***$l***" if $ENABLE_DEBUGGING;
+                    warn "PayGov: LINE ITEM - ***$l***" if $ENABLE_DEBUGGING;
                     $l = substr( $l, 1, length($l) - 2 );
                     my ( undef, $id, $description, $amount ) =
                       split( /[\*,\~]/, $l );
 
-                    warn "FIS: ACCOUNTLINE TO PAY ID - $id" if $ENABLE_DEBUGGING;
-                    warn "FIS: DESC - $description" if $ENABLE_DEBUGGING;
-                    warn "FIST: AMOUNT - $amount" if $ENABLE_DEBUGGING;
+                    warn "PayGov: ACCOUNTLINE TO PAY ID - $id" if $ENABLE_DEBUGGING;
+                    warn "PayGov: DESC - $description" if $ENABLE_DEBUGGING;
+                    warn "PayGovT: AMOUNT - $amount" if $ENABLE_DEBUGGING;
 
                     push(
                         @paid,
@@ -210,11 +210,11 @@ sub configure {
         ## Grab the values we already have for our settings, if any exist
         $template->param(
             enable_opac_payments => $self->retrieve_data('enable_opac_payments'),
-            FisPostUrl      => $self->retrieve_data('FisPostUrl'),
-            FisMerchantCode => $self->retrieve_data('FisMerchantCode'),
-            FisSettleCode   => $self->retrieve_data('FisSettleCode'),
-            FisApiUrl       => $self->retrieve_data('FisApiUrl'),
-            FisApiPassword  => $self->retrieve_data('FisApiPassword'),
+            PayGovPostUrl      => $self->retrieve_data('PayGovPostUrl'),
+            PayGovMerchantCode => $self->retrieve_data('PayGovMerchantCode'),
+            PayGovSettleCode   => $self->retrieve_data('PayGovSettleCode'),
+            PayGovApiUrl       => $self->retrieve_data('PayGovApiUrl'),
+            PayGovApiPassword  => $self->retrieve_data('PayGovApiPassword'),
         );
 
         print $cgi->header();
@@ -224,11 +224,11 @@ sub configure {
         $self->store_data(
             {
                 enable_opac_payments => $cgi->param('enable_opac_payments'),
-                FisPostUrl         => $cgi->param('FisPostUrl'),
-                FisMerchantCode    => $cgi->param('FisMerchantCode'),
-                FisSettleCode      => $cgi->param('FisSettleCode'),
-                FisApiUrl          => $cgi->param('FisApiUrl'),
-                FisApiPassword     => $cgi->param('FisApiPassword'),
+                PayGovPostUrl         => $cgi->param('PayGovPostUrl'),
+                PayGovMerchantCode    => $cgi->param('PayGovMerchantCode'),
+                PayGovSettleCode      => $cgi->param('PayGovSettleCode'),
+                PayGovApiUrl          => $cgi->param('PayGovApiUrl'),
+                PayGovApiPassword     => $cgi->param('PayGovApiPassword'),
             }
         );
         $self->go_home();

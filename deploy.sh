@@ -9,7 +9,7 @@ then
     git commit -a -m "Version auto-incremented  - $TRAVIS_JOB_NUMBER"
     gulp build
     gulp release
-    git remote add github https://$GITHUB_TOKEN@github.com/bywatersolutions/koha-plugin-pay-via-fis
+    git remote add github https://$GITHUB_TOKEN@github.com/bywatersolutions/koha-plugin-pay-via-paygov
     git fetch --all
     git push github HEAD:master
   fi
