@@ -10,60 +10,46 @@
 
 <div id="doc3">
     <!-- We can access our own plugins resource files using the PLUGIN_PATH variable. -->
-    <img src="[% PLUGIN_PATH %]/logo.png" />
     <h3>Koha: Plugin: Pay Via PayGov: Configuration</h3>
 
-    <!-- Notice our form here has no 'action', this is good, it means that our forms will always get passed back to 'plugins/run.pl'. You could hard code it instead if you prefer -->
-    <form method="get">
-        <!-- Always pass these two parameters so the plugin system knows what to execute! -->
-        <input type="hidden" name="class" value="[% CLASS %]"/>
-        <input type="hidden" name="method" value="[% METHOD %]"/>
+	<form method='get'>
+	  <input type="hidden" name="class" value="[% CLASS %]"/>
+	  <input type="hidden" name="method" value="[% METHOD %]"/>
+	  <input type="hidden" name="save" value="1" />
 
-        <label for="enable_opac_payments">Enable OPAC Account Payments: </label>
-        <select name="enable_opac_payments">
-            [% IF enable_opac_payments == 'No' %]
-                <option value="No" selected="selected">No</option>
-            [% ELSE %]
-                <option value="No">No</option>
-            [% END %]
+	  <div class="form-group">
+			<label for="enable_opac_payments">Enable OPAC Account Payments: </label>
+			<select class="form-control" name="enable_opac_payments">
+				[% IF enable_opac_payments == 'No' %]
+					<option value="No" selected="selected">No</option>
+				[% ELSE %]
+					<option value="No">No</option>
+				[% END %]
 
-            [% IF enable_opac_payments == 'Yes' %]
-                <option value="Yes" selected="selected">Yes</option>
-            [% ELSE %]
-                <option value="Yes">Yes</option>
-            [% END %]
-        </select>
+				[% IF enable_opac_payments == 'Yes' %]
+					<option value="Yes" selected="selected">Yes</option>
+				[% ELSE %]
+					<option value="Yes">Yes</option>
+				[% END %]
+			</select>
+	  </div>
 
-        <p>
+	  <div class="form-group">
+		<label for="PayGovPostUrl">PayGov Post URL</label>
+		<input type="text" class="form-control" id="PayGovPostUrl" name="PayGovPostUrl" value="[% PayGovPostUrl %]" />
+	  </div>
 
-        <label for="PayGovPostUrl">PayGov Post URL: </label>
-        <input type="text" name="PayGovPostUrl" value="[% PayGovPostUrl %]" />
+	  <div class="form-group">
+		<label for="PayGovMerchantCode">PayGov TTID: </label>
+		<input type="text" class="form-control" name="PayGovMerchantCode" value="[% PayGovMerchantCode %]" />
+	  </div>
 
-        <p>
+	  <div class="form-group">
+		<label for="PayGovApiPassword">PayGov API Password: </label>
+		<input type="text" class="form-control" name="PayGovApiPassword" value="[% PayGovApiPassword %]" />
+	  </div>
 
-        <label for="PayGovMerchantCode">PayGov Merchant Code: </label>
-        <input type="text" name="PayGovMerchantCode" value="[% PayGovMerchantCode %]" />
-
-        <p>
-
-        <label for="PayGovSettleCode">PayGov Settle Code: </label>
-        <input type="text" name="PayGovSettleCode" value="[% PayGovSettleCode %]" />
-
-        <p>
-
-        <label for="PayGovApiUrl">PayGov API URL: </label>
-        <input type="text" name="PayGovApiUrl" value="[% PayGovApiUrl %]" />
-
-        <p>
-
-        <label for="PayGovApiPassword">PayGov API Password: </label>
-        <input type="text" name="PayGovApiPassword" value="[% PayGovApiPassword %]" />
-
-        <p>
-
-        <input type="hidden" name="save" value="1" />
-
-        <input type="submit" value="Save configuration" />
-    </form>
+	  <button type="submit" class="btn btn-default">Save</button>
+	</form>
 
 [% INCLUDE 'intranet-bottom.inc' %]

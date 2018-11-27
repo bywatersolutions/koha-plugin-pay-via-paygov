@@ -1,5 +1,6 @@
 [% USE Koha %]
 [% USE KohaDates %]
+[% USE To %]
 
 [% INCLUDE 'doc-head-open.inc' %][% IF ( LibraryNameTitle ) %][% LibraryNameTitle %][% ELSE %]Koha online[% END %] catalog &rsaquo; Pay your fines and charges
 [% INCLUDE 'doc-head-close.inc' %]
@@ -70,29 +71,38 @@
                         </tfoot>
                     </table>
 
-
                     <form method="post" action="[% PayGovPostUrl %]">
-                        <input type="hidden" name="MerchantCode" value="[% PayGovMerchantCode %]" />
+                        <input type="hidden" name="Address1" value="[% borrower.address %]" />
+                        <input type="hidden" name="City" value="[% borrower.city %]" />
+                        <input type="hidden" name="F-5494" value="[% borrower.surname %], [% borrower.firstname %]" />
+                        <input type="hidden" name="F-5495" value="[% borrower.cardnumber %]" />
+                        <input type="hidden" name="FirstName" value="[% borrower.firstname %]" />
+                        <input type="hidden" name="LastName" value="[% borrower.surname %]" />
+                        <input type="hidden" name="Phone" value="[% borrower.phone %]" />
                         <input type="hidden" name="SettleCode" value="[% PayGovSettleCode %]" />
-                        <input type="hidden" name="PaymentMethod" value="CreditOrDebit" />
-                        <input type="hidden" name="ReturnUrl" value="[% OPACBaseURL %]/cgi-bin/koha/opac-account-pay-return.pl?payment_method=Koha::Plugin::Com::ByWaterSolutions::PayViaPayGov" />
-                        <input type="hidden" name="CancelUrl" value="[% OPACBaseURL %]/cgi-bin/koha/opac-account.pl" />
+                        <input type="hidden" name="State" value="[% borrower.state %]" />
+                        <input type="hidden" name="SuccessURL" value="[% OPACBaseURL %]/cgi-bin/koha/opac-account-pay-return.pl?payment_method=Koha::Plugin::Com::ByWaterSolutions::PayViaPayGov" />
+                        <input type="hidden" name="Ttid" value="[% PayGovMerchantCode %]" />
+                        <input type="hidden" name="ZipCode" value="[% borrower.zipcode %]" />
+                        <input type="hidden" name="email" value="[% borrower.email %]" />
+                        <input type="hidden" name="user_id" value="[% borrower.borrowernumber %]" />
 
-                        <input type="hidden" name="UserPart1" value="[% borrower.firstname %]" />
-                        <input type="hidden" name="UserPart2" value="[% borrower.surname %]" />
-                        <input type="hidden" name="UserPart3" value="[% borrower.borrowernumber %]" />
+                        <input type="hidden" name="ApiPassword" value="[% PayGovApiPassword %]" />
 
-                        <input type="hidden" name="BillingAddress" value="[% borrower.address %]" />
-                        <input type="hidden" name="BillingName" value="[% borrower.firstname %] [% borrower.surname %]" />
-                        <input type="hidden" name="BillingCountry" value="US" />
-                        <input type="hidden" name="BillingCity" value="[% borrower.city %]" />
-                        <input type="hidden" name="BillingState" value="[% borrower.state %]" />
-                        <input type="hidden" name="BillingPostalCode" value="[% borrower.zipcode %]" />
-                        <input type="hidden" name="BillingEmail" value="[% borrower.email %]" />
+                        [% SET data = {} %]
+                        [% data.token = token %]
+                        [% data.borrowernumber = borrower.id %]
+                        [% data.accountlines = [] %]
+                        [% FOREACH a IN accountlines %]
+                            [% data.accountlines.push( a.id ) %]
+                        [% END %]
+                        <input type="hidden" name="OrderToken" value='[% To.json(data) %]' />
 
-                        [% SET i = 0 %]
-                        [% UNLESS a.description %][% SET a.description = 'No description' %][% END %]
-                        <input type="hidden" name="LineItems" value="[% FOREACH a IN accountlines %][% i = i + 1 %][[% i %]*[% a.accountlines_id %]*[% a.description | replace(",", "" ) | html %]*[% a.amountoutstanding %]][% IF !loop.last %],[% END %][% END %]" />
+                        [% SET paymentAmount = 0 %]
+                        [% FOREACH a IN accountlines %]
+                            [% SET paymentAmount = paymentAmount + a.amountoutstanding %]
+                        [% END %]
+                        <input type="hidden" name="paymentAmount" value="[% paymentAmount %]" />
 
                         <input type="submit" class="btn" value="Yes, proceed with payment" />
                     </form>
