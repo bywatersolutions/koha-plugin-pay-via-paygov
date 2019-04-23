@@ -9,8 +9,7 @@ install:
   - git log -1 --pretty=oneline
 
 before_script:
-  - npm install -g gulp-cli
-  - npm install jsonfile
+  - yarn
 
 script:
   - bash deploy.sh
