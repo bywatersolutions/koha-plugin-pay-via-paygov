@@ -130,7 +130,7 @@ sub opac_online_payment_end {
     my ( $m, $v );
     if ( $authcode eq 'SUCCESS' ) {
         if ($token_hr) {
-            my $note = "PayGov ($OrderId)";
+            my $note = "PayGov ($order_id)";
 
             # If this note is found, it must be a duplicate post
             unless (
