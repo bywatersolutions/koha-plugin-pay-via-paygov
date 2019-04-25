@@ -114,7 +114,7 @@ sub opac_online_payment_end {
 
     my $amount   = $vars{Amount};
     my $authcode = $vars{authcode};
-    my $trans_id = $vars{TransId};
+    my $order_id = $vars{OrderId};
 
     my $json = from_json( $vars{OrderToken} );
     warn "JSON: " . Data::Dumper::Dumper($json);
@@ -130,7 +130,7 @@ sub opac_online_payment_end {
     my ( $m, $v );
     if ( $authcode eq 'SUCCESS' ) {
         if ($token_hr) {
-            my $note = "PayGov ( $trans_id  )";
+            my $note = "PayGov ($OrderId)";
 
             # If this note is found, it must be a duplicate post
             unless (
