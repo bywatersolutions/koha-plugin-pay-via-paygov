@@ -110,14 +110,12 @@ sub opac_online_payment_end {
         }
     );
     my %vars = $cgi->Vars();
-    warn "PAYGOV INCOMIGN: " . Data::Dumper::Dumper( \%vars );
 
     my $amount   = $vars{Amount};
     my $authcode = $vars{authcode};
     my $order_id = $vars{OrderId};
 
     my $json = from_json( $vars{OrderToken} );
-    warn "JSON: " . Data::Dumper::Dumper($json);
 
     $borrowernumber = $json->{borrowernumber};
     my $accountlines = $json->{accountlines};
@@ -143,8 +141,6 @@ sub opac_online_payment_end {
                 my $schema = Koha::Database->new->schema;
 
                 my @lines = Koha::Account::Lines->search({ accountlines_id => { -in => $accountlines} });
-                warn "ACCOUNTLINES TO PAY: ";
-                warn Data::Dumper::Dumper( $_->unblessed ) for @lines;
 
                $schema->txn_do(
                     sub {
