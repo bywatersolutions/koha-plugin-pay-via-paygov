@@ -114,6 +114,7 @@ sub opac_online_payment_end {
     my $amount   = $vars{Amount};
     my $authcode = $vars{authcode};
     my $order_id = $vars{OrderId};
+    my $trans_id = $vars{TransId};
 
     my $json = from_json( $vars{OrderToken} );
 
