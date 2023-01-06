@@ -141,9 +141,9 @@ sub opac_online_payment_end {
 
                 my $schema = Koha::Database->new->schema;
 
-                my @lines = Koha::Account::Lines->search({ accountlines_id => { -in => $accountlines} });
+                my @lines = Koha::Account::Lines->search( { accountlines_id => { -in => $accountlines } } )->as_list;
 
-               $schema->txn_do(
+                $schema->txn_do(
                     sub {
                         $dbh->do(
                             "DELETE FROM paygov_plugin_tokens WHERE token = ?",
