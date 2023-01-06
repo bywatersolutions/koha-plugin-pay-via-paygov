@@ -10,20 +10,31 @@
 [% INCLUDE 'masthead.inc' %]
 
 <div class="main">
-    <ul class="breadcrumb">
-        <li><a href="/cgi-bin/koha/opac-main.pl">Home</a> <span class="divider">&rsaquo;</span></li>
-        <li><a href="/cgi-bin/koha/opac-user.pl">[% borrower.firstname %] [% borrower.surname %]</a><span class="divider">&rsaquo;</span></li>
-        <li><a href="#">Pay your fines and charges</a></li>
-    </ul>
+    <nav id="breadcrumbs" aria-label="Breadcrumb" class="breadcrumbs">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/cgi-bin/koha/opac-main.pl">Home</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="/cgi-bin/koha/opac-user.pl">[% INCLUDE 'patron-title.inc' patron = logged_in_user %]</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="/cgi-bin/koha/opac-account.pl">Your charges</a>
+            </li>
+            <li class="breadcrumb-item active">
+                <a href="#" aria-current="page">Pay your charges</a>
+            </li>
+        </ol>
+    </nav> <!-- /#breadcrumbs -->
 
     <div class="container-fluid">
-        <div class="row-fluid">
-            <div class="span2">
+        <div class="row">
+            <div class="col col-lg-2 order-2 order-lg-1">
                 <div id="navigation">
                     [% INCLUDE 'navigation.inc' IsPatronPage=1 %]
                 </div>
             </div>
-            <div class="span10">
+            <div class="col-md-12 col-lg-10 order-1">
                 <div id="useraccount" class="maincontent">
                     <p>
                         You are about to initiate a payment for the following fees to your library via PayGov.
@@ -104,7 +115,8 @@
                         [% END %]
                         <input type="hidden" name="paymentAmount" value="[% paymentAmount %]" />
 
-                        <input type="submit" class="btn" value="Yes, proceed with payment" />
+                        <input type="submit" class="btn btn-default" value="Yes, proceed with payment" />
+                        <a href="/cgi-bin/koha/opac-account.pl">Cancel</a>
                     </form>
                 </div> <!-- / #useraccount -->
             </div> <!-- / .span10 -->
