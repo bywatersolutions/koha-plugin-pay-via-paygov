@@ -13,6 +13,7 @@ use Koha::Account::Lines;
 use URI::Escape qw(uri_unescape);
 use LWP::UserAgent;
 use JSON qw(from_json);
+use Digest::SHA qw(sha256_hex);
 
 ## Here we set our plugin version
 our $VERSION = "{VERSION}";
@@ -129,7 +130,8 @@ sub opac_online_payment_end {
     my ( $m, $v );
     if ( $authcode eq 'SUCCESS' ) {
         if ($token_hr) {
-            my $note = "PayGov ($order_id)";
+	    my $encrypted_order_id = sha256_hex($order_id);
+            my $note = "PayGov ($encrypted_order_id)";
 
             # If this note is found, it must be a duplicate post
             unless (
