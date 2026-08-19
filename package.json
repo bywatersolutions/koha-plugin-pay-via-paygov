@@ -1,6 +1,6 @@
 {
   "name": "koha-plugin-pay-via-paygov",
-  "version": "1.0.10",
+  "version": "2.1.0",
   "previous_version": "1.0.9",
   "description": "Koha PayGov OPAC Online Payment Plugin",
   "devDependencies": {
