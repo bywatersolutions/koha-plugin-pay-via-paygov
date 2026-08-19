@@ -397,28 +397,70 @@ Encrypts credentials that earlier versions of this plugin stored in cleartext.
 sub upgrade {
     my ( $self, $args ) = @_;
 
+    # Earlier versions never executed their CREATE TABLE, so an existing install
+    # has no token table until now
+    $self->_create_token_table;
+
     $self->_encrypt_stored_credentials;
 
     return 1;
 }
 
-sub install() {
-    my $dbh = C4::Context->dbh();
+=head3 cronjob_nightly
 
-    my $query = q{
-		CREATE TABLE IF NOT EXISTS paygov_plugin_tokens
-		  (
-			 token          VARCHAR(128),
-			 created_on     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			 borrowernumber INT(11) NOT NULL,
-			 PRIMARY KEY (token),
-			 CONSTRAINT token_bn FOREIGN KEY (borrowernumber) REFERENCES borrowers (
-			 borrowernumber ) ON DELETE CASCADE ON UPDATE CASCADE
-		  )
-		ENGINE=innodb
-		DEFAULT charset=utf8mb4
-		COLLATE=utf8mb4_unicode_ci;
-    };
+Koha runs this nightly for every enabled plugin ( misc/cronjobs/plugins_nightly.pl,
+invoked by the packages' daily cron ). Removes tokens from checkouts that were begun
+but never completed. The rows are otherwise only removed when a payment finishes, so
+abandoned checkouts accumulate forever.
+
+A checkout completes within minutes, so a week old token is long abandoned. The window
+is deliberately generous - deleting a token for a checkout still in flight would make
+its payment unprocessable when the processor answers.
+
+=cut
+
+sub cronjob_nightly {
+    my ($self) = @_;
+
+    C4::Context->dbh->do(q{
+        DELETE FROM paygov_plugin_tokens
+        WHERE created_on < DATE_SUB(NOW(), INTERVAL 7 DAY)
+    });
+
+    return;
+}
+
+=head3 _create_token_table
+
+Creates the paygov_plugin_tokens table. IF NOT EXISTS, so it is safe to call from
+both install() and upgrade() - earlier versions built this statement without ever
+executing it, so an existing install has no table until upgrade() runs this.
+
+=cut
+
+sub _create_token_table {
+    my ($self) = @_;
+
+    return C4::Context->dbh->do(q{
+        CREATE TABLE IF NOT EXISTS paygov_plugin_tokens
+          (
+             token          VARCHAR(128),
+             created_on     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+             borrowernumber INT(11) NOT NULL,
+             PRIMARY KEY (token),
+             CONSTRAINT paygov_token_bn FOREIGN KEY (borrowernumber) REFERENCES borrowers (
+             borrowernumber ) ON DELETE CASCADE ON UPDATE CASCADE
+          )
+        ENGINE=innodb
+        DEFAULT charset=utf8mb4
+        COLLATE=utf8mb4_unicode_ci
+    });
+}
+
+sub install {
+    my ( $self, $args ) = @_;
+
+    $self->_create_token_table;
 
     return 1;
 }
