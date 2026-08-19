@@ -10,10 +10,12 @@ use C4::Context;
 use C4::Auth qw(get_template_and_user);
 use Koha::Account;
 use Koha::Account::Lines;
+use Encode qw(decode_utf8 encode_utf8);
 use URI::Escape qw(uri_unescape);
 use LWP::UserAgent;
 use JSON qw(from_json);
 use Digest::SHA qw(sha256_hex);
+use Try::Tiny;
 
 ## Here we set our plugin version
 our $VERSION = "{VERSION}";
@@ -31,6 +33,13 @@ our $metadata = {
 };
 
 our $ENABLE_DEBUGGING = 1;
+
+# Encrypted credentials are stored with this marker in front of the ciphertext so we can
+# tell them apart from cleartext values left behind by versions before encryption existed.
+our $ENCRYPTION_PREFIX = 'koha-enc-v1:';
+
+# The stored configuration keys holding secrets, which must be encrypted at rest
+our @CREDENTIAL_KEYS = qw( PayGovApiPassword );
 
 sub new {
     my ( $class, $args ) = @_;
@@ -88,7 +97,10 @@ sub opac_online_payment_begin {
         PayGovMerchantCode   => $self->retrieve_data('PayGovMerchantCode'),
         PayGovSettleCode     => $self->retrieve_data('PayGovSettleCode'),
         PayGovApiUrl         => $self->retrieve_data('PayGovApiUrl'),
-        PayGovApiPassword    => $self->retrieve_data('PayGovApiPassword'),
+
+        # PayGov's integration requires the password as a field in the browser form,
+        # so it must be decrypted here
+        PayGovApiPassword    => $self->_get_secret('PayGovApiPassword'),
         accountlines         => \@accountlines,
         token                => $token,
     );
@@ -195,10 +207,17 @@ sub configure {
     my ( $self, $args ) = @_;
     my $cgi = $self->{'cgi'};
 
+    # An instance that had no encryption key when the plugin was upgraded still holds its
+    # credentials in cleartext, so try again every time someone opens the configuration page
+    $self->_encrypt_stored_credentials;
+
     unless ( $cgi->param('save') ) {
         my $template = $self->get_template( { file => 'configure.tt' } );
 
+        my $stored_password = $self->retrieve_data('PayGovApiPassword');
+
         ## Grab the values we already have for our settings, if any exist
+        ## The API password itself is deliberately never sent to the template
         $template->param(
             enable_opac_payments =>
               $self->retrieve_data('enable_opac_payments'),
@@ -206,13 +225,20 @@ sub configure {
             PayGovMerchantCode => $self->retrieve_data('PayGovMerchantCode'),
             PayGovSettleCode   => $self->retrieve_data('PayGovSettleCode'),
             PayGovApiUrl       => $self->retrieve_data('PayGovApiUrl'),
-            PayGovApiPassword  => $self->retrieve_data('PayGovApiPassword'),
+            PayGovApiPassword_is_set => ( defined $stored_password && length $stored_password ) ? 1 : 0,
+            PayGovApiPassword_is_encrypted =>
+                ( $stored_password && index( $stored_password, $ENCRYPTION_PREFIX ) == 0 ) ? 1 : 0,
+            encryption_available => $self->_encryption ? 1 : 0,
+            csrf_token           => $self->_csrf_token,
         );
 
         print $cgi->header();
         print $template->output();
     }
     else {
+        # An empty password field means "keep the current password", so _set_secret ignores it
+        $self->_set_secret( 'PayGovApiPassword', scalar $cgi->param('PayGovApiPassword') );
+
         $self->store_data(
             {
                 enable_opac_payments => $cgi->param('enable_opac_payments'),
@@ -220,11 +246,160 @@ sub configure {
                 PayGovMerchantCode   => $cgi->param('PayGovMerchantCode'),
                 PayGovSettleCode     => $cgi->param('PayGovSettleCode'),
                 PayGovApiUrl         => $cgi->param('PayGovApiUrl'),
-                PayGovApiPassword    => $cgi->param('PayGovApiPassword'),
             }
         );
         $self->go_home();
     }
+}
+
+=head3 _encryption
+
+    my $encryption = $self->_encryption;
+
+Returns a Koha::Encryption object, or undef when encryption is unavailable. It is unavailable
+on Koha before 22.05, and on any instance where encryption_key is unset in koha-conf.xml.
+
+=cut
+
+sub _encryption {
+    my ($self) = @_;
+
+    return try {
+        require Koha::Encryption;
+        Koha::Encryption->new;
+    } catch {
+        undef;
+    };
+}
+
+=head3 _csrf_token
+
+    my $token = $self->_csrf_token;
+
+Returns a CSRF token for the configuration form, or undef on Koha versions that have no
+Koha::Token. Koha::Middleware::CSRF answers any tokenless POST to the staff interface with
+a 403, so the configuration form cannot be submitted without this.
+
+=cut
+
+sub _csrf_token {
+    my ($self) = @_;
+
+    return try {
+        require Koha::Token;
+        Koha::Token->new->generate_csrf( { session_id => scalar $self->{'cgi'}->cookie('CGISESSID') } );
+    } catch {
+        undef;
+    };
+}
+
+=head3 _get_secret
+
+    my $password = $self->_get_secret('PayGovApiPassword');
+
+Returns the cleartext value of a stored credential. Values stored before encryption was added
+carry no prefix and are returned as-is, so an instance without an encryption key keeps working.
+
+=cut
+
+sub _get_secret {
+    my ( $self, $key ) = @_;
+
+    my $stored = $self->retrieve_data($key);
+    return $stored unless defined $stored && length $stored;
+    return $stored unless index( $stored, $ENCRYPTION_PREFIX ) == 0;
+
+    my $ciphertext = substr( $stored, length $ENCRYPTION_PREFIX );
+
+    my $encryption = $self->_encryption;
+    die "Pay Via PayGov: '$key' is stored encrypted but Koha's encryption is unavailable."
+        . " Set 'encryption_key' in koha-conf.xml.\n"
+        unless $encryption;
+
+    my $plaintext = try {
+        decode_utf8( $encryption->decrypt_hex($ciphertext) );
+    } catch {
+        undef;
+    };
+
+    # Decrypting with the wrong key doesn't raise an error, it just yields an empty string,
+    # so an empty result has to be treated as a failure rather than as an empty credential.
+    die "Pay Via PayGov: unable to decrypt '$key'. The 'encryption_key' in koha-conf.xml"
+        . " may have changed. Re-enter the credential in the plugin configuration.\n"
+        unless defined $plaintext && length $plaintext;
+
+    return $plaintext;
+}
+
+=head3 _set_secret
+
+    $self->_set_secret( 'PayGovApiPassword', $value );
+
+Stores a credential, encrypted when encryption is available. An empty value is ignored so that
+saving the configuration form without retyping the credential keeps the stored one.
+
+=cut
+
+sub _set_secret {
+    my ( $self, $key, $plaintext ) = @_;
+
+    return unless defined $plaintext && length $plaintext;
+
+    my $encryption = $self->_encryption;
+    unless ($encryption) {
+        warn "Pay Via PayGov: storing '$key' in cleartext because Koha's encryption is"
+            . " unavailable. Set 'encryption_key' in koha-conf.xml.";
+        $self->store_data( { $key => $plaintext } );
+        return;
+    }
+
+    $self->store_data( { $key => $ENCRYPTION_PREFIX . $encryption->encrypt_hex( encode_utf8($plaintext) ) } );
+
+    return;
+}
+
+=head3 _encrypt_stored_credentials
+
+    $self->_encrypt_stored_credentials;
+
+Encrypts any credential still held in cleartext. Safe to call repeatedly, and never dies: an
+instance with no encryption key has to keep working on the cleartext credential it already has.
+
+=cut
+
+sub _encrypt_stored_credentials {
+    my ($self) = @_;
+
+    foreach my $key (@CREDENTIAL_KEYS) {
+        my $stored = $self->retrieve_data($key);
+        next unless defined $stored && length $stored;
+        next if index( $stored, $ENCRYPTION_PREFIX ) == 0;
+
+        my $encryption = $self->_encryption;
+        unless ($encryption) {
+            warn "Pay Via PayGov: cannot encrypt '$key' because Koha's encryption is"
+                . " unavailable. Set 'encryption_key' in koha-conf.xml.";
+            next;
+        }
+
+        $self->store_data( { $key => $ENCRYPTION_PREFIX . $encryption->encrypt_hex( encode_utf8($stored) ) } );
+    }
+
+    return 1;
+}
+
+=head3 upgrade
+
+Encrypts credentials that earlier versions of this plugin stored in cleartext.
+
+=cut
+
+sub upgrade {
+    my ( $self, $args ) = @_;
+
+    $self->_encrypt_stored_credentials;
+
+    return 1;
 }
 
 sub install() {
